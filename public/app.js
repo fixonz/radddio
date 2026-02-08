@@ -17,6 +17,10 @@ let currentVideoId = null;
 let equalizerInterval = null;
 let eqBars = [];
 
+// Playlist State
+let isPlaylistExpanded = false;
+let fullPlaylist = [];
+
 // Avatar options (Lucide icon names)
 const avatarOptions = [
     'music', 'headset', 'guitar', 'mic-2', 'speaker',
@@ -154,8 +158,9 @@ function setupEventListeners() {
         });
     }
 
-    const playPauseButton = document.getElementById('playPauseButton');
-    if (playPauseButton) playPauseButton.addEventListener('click', togglePlayback);
+    // Playback control via Disc
+    const albumArt = document.getElementById('albumArtCircle');
+    if (albumArt) albumArt.addEventListener('click', togglePlayback);
 
     // Visualizer Controls
     const visualizerButton = document.getElementById('visualizerButton');
@@ -163,6 +168,21 @@ function setupEventListeners() {
 
     const closeVisualizer = document.getElementById('closeVisualizer');
     if (closeVisualizer) closeVisualizer.addEventListener('click', toggleVisualizer);
+
+    // Playlist Toggle
+    const togglePlaylist = document.getElementById('togglePlaylist');
+    if (togglePlaylist) {
+        togglePlaylist.addEventListener('click', () => {
+            isPlaylistExpanded = !isPlaylistExpanded;
+            updatePlaylistDisplay(fullPlaylist);
+
+            const text = document.getElementById('playlistToggleText');
+            const icon = document.getElementById('playlistToggleIcon');
+            if (text) text.textContent = isPlaylistExpanded ? 'Show Less' : 'Show History';
+            if (icon) icon.setAttribute('data-lucide', isPlaylistExpanded ? 'chevron-up' : 'chevron-down');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    }
 
     // Volume Control
     const volumeSlider = document.getElementById('volumeSlider');
@@ -601,6 +621,7 @@ function toggleVisualizer() {
 
 // Playlist
 function updatePlaylistDisplay(playlist) {
+    fullPlaylist = playlist;
     const playlistHistory = document.getElementById('playlistHistory');
     const songCount = document.getElementById('songCount');
 
@@ -613,7 +634,12 @@ function updatePlaylistDisplay(playlist) {
     }
 
     playlistHistory.innerHTML = '';
-    playlist.slice(-10).reverse().forEach(song => {
+
+    // Show last 5 if collapsed, else last 20
+    const limit = isPlaylistExpanded ? 20 : 5;
+    const displayedSongs = [...playlist].reverse().slice(0, limit);
+
+    displayedSongs.forEach(song => {
         const item = document.createElement('div');
         item.className = 'playlist-item';
         const timeStr = new Date(song.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -628,29 +654,13 @@ function updatePlaylistDisplay(playlist) {
 }
 
 function addToPlaylistDisplay(songData) {
-    const playlistHistory = document.getElementById('playlistHistory');
-    const songCount = document.getElementById('songCount');
+    // Since we now use a centralized updatePlaylistDisplay call usually,
+    // we'll just push to local state and re-render to keep it simple and consistent.
+    if (!songData.playedAt) songData.playedAt = new Date();
+    if (!songData.playedBy) songData.playedBy = 'DJ';
 
-    if (playlistHistory) {
-        const emptyState = playlistHistory.querySelector('.empty-state');
-        if (emptyState) playlistHistory.innerHTML = '';
-
-        const item = document.createElement('div');
-        item.className = 'playlist-item';
-        item.innerHTML = `
-            <div class="playlist-info">
-                <div class="playlist-title">${songData.title}</div>
-                <div class="playlist-meta">Playing now</div>
-            </div>
-        `;
-        playlistHistory.insertBefore(item, playlistHistory.firstChild);
-        while (playlistHistory.children.length > 10) playlistHistory.removeChild(playlistHistory.lastChild);
-    }
-
-    if (songCount) {
-        const currentCount = parseInt(songCount.textContent) || 0;
-        songCount.textContent = currentCount + 1;
-    }
+    fullPlaylist.push(songData);
+    updatePlaylistDisplay(fullPlaylist);
 }
 
 // Chat

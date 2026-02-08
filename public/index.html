@@ -133,9 +133,6 @@
                     <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
                         <i data-lucide="maximize"></i>
                     </button>
-                    <button id="playPauseButton" class="play-pause-btn-main">
-                        <span id="playPauseIcon"><i data-lucide="play"></i></span>
-                    </button>
                 </div>
 
                 <div class="volume-control">
@@ -157,7 +154,13 @@
 
             <!-- Playlist History -->
             <div class="playlist-section">
-                <h2><i data-lucide="list-music"></i> Playlist History</h2>
+                <div class="playlist-header">
+                    <h2><i data-lucide="list-music"></i> Recent Tracks</h2>
+                    <button id="togglePlaylist" class="playlist-toggle-btn">
+                        <span id="playlistToggleText">Show History</span>
+                        <i data-lucide="chevron-down" id="playlistToggleIcon"></i>
+                    </button>
+                </div>
                 <div id="playlistHistory" class="playlist-history">
                     <p class="empty-state">No songs played yet</p>
                 </div>
