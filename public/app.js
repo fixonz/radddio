@@ -166,6 +166,13 @@ function setupEventListeners() {
     const playPauseButton = document.getElementById('playPauseButton');
     if (playPauseButton) playPauseButton.addEventListener('click', togglePlayback);
 
+    // Visualizer Controls
+    const visualizerButton = document.getElementById('visualizerButton');
+    if (visualizerButton) visualizerButton.addEventListener('click', toggleVisualizer);
+
+    const closeVisualizer = document.getElementById('closeVisualizer');
+    if (closeVisualizer) closeVisualizer.addEventListener('click', toggleVisualizer);
+
     // Volume Control
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeValue = document.getElementById('volumeValue');
@@ -402,6 +409,12 @@ function loadVideo(songData) {
     // Update UI
     if (songData.title) updateNowPlaying(songData);
     if (songData.videoId) updateAlbumArt(songData);
+
+    // Update Visualizer info
+    const vizTitle = document.getElementById('vizTitle');
+    const vizArtist = document.getElementById('vizArtist');
+    if (vizTitle && songData.title) vizTitle.textContent = songData.title;
+    if (vizArtist) vizArtist.textContent = 'Playing on Radddio';
 }
 
 function updateAlbumArt(songData) {
@@ -526,6 +539,36 @@ function startEqualizer() {
             const height = baseHeight + (normalized * (maxHeight - baseHeight));
             bar.style.height = `${height}px`;
         });
+
+        // Visualizer reactive effects
+        const vizContainer = document.getElementById('visualizerContainer');
+        if (vizContainer && vizContainer.classList.contains('active')) {
+            let avgLow = 0;
+            const lowCount = 6;
+            for (let i = 0; i < lowCount; i++) {
+                if (eqBars[i]) {
+                    const h = parseFloat(eqBars[i].style.height);
+                    avgLow += h / 140;
+                }
+            }
+            avgLow /= lowCount;
+
+            const iframe = document.querySelector('#player iframe');
+            const overlay = document.querySelector('.visualizer-overlay');
+
+            if (iframe) {
+                // Dynamic Zoom based on "beat"
+                const scale = 1.05 + (avgLow * 0.15); // Zoom between 5% and 20%
+                iframe.style.transform = `scale(${scale})`;
+                // Subtle RGB shift simulation via filter
+                iframe.style.filter = `contrast(${100 + avgLow * 50}%) brightness(${80 + avgLow * 40}%) saturate(${100 + avgLow * 100}%)`;
+            }
+
+            if (overlay) {
+                overlay.style.opacity = 0.2 + (avgLow * 0.8);
+                overlay.style.boxShadow = `inset 0 0 ${100 + avgLow * 200}px rgba(139, 92, 246, ${0.3 + avgLow * 0.4})`;
+            }
+        }
     }, updateInterval);
 }
 
@@ -537,6 +580,23 @@ function stopEqualizer() {
         equalizerInterval = null;
     }
     eqBars.forEach(bar => { bar.style.height = '20px'; });
+}
+
+function toggleVisualizer() {
+    const vizContainer = document.getElementById('visualizerContainer');
+    if (!vizContainer) return;
+
+    const isActive = vizContainer.classList.toggle('active');
+
+    // Update viz info if opening
+    if (isActive) {
+        const songTitle = document.getElementById('songTitle').textContent;
+        const songArtist = document.getElementById('songArtist').textContent;
+        const vizTitle = document.getElementById('vizTitle');
+        const vizArtist = document.getElementById('vizArtist');
+        if (vizTitle) vizTitle.textContent = songTitle;
+        if (vizArtist) vizArtist.textContent = songArtist;
+    }
 }
 
 // Playlist

@@ -94,8 +94,16 @@
 
             <!-- Center - Player -->
             <main class="player-section">
-                <!-- Hidden YouTube Player (audio only) -->
-                <div id="player" style="position: absolute; left: -9999px; width: 1px; height: 1px;"></div>
+                <!-- Visualizer / Fullscreen Container -->
+                <div id="visualizerContainer" class="visualizer-container">
+                    <div id="player"></div>
+                    <div class="visualizer-overlay PulseEffect"></div>
+                    <button id="closeVisualizer" class="close-visualizer"><i data-lucide="minimize-2"></i></button>
+                    <div class="visualizer-info">
+                        <h2 id="vizTitle"></h2>
+                        <p id="vizArtist"></p>
+                    </div>
+                </div>
 
                 <!-- Circular Album Art Display -->
                 <div class="album-art-container">
@@ -176,6 +184,9 @@
                         </button>
                     </div>
                     <div class="playback-controls">
+                        <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
+                            <i data-lucide="maximize"></i>
+                        </button>
                         <button id="playPauseButton" class="control-button">
                             <span id="playPauseIcon"><i data-lucide="play"></i></span>
                         </button>
