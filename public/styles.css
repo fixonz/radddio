@@ -374,12 +374,24 @@ body {
     padding: 12px;
     background: #000;
     box-shadow: 0 0 50px rgba(139, 92, 246, 0.4);
-    animation: rotate 20s linear infinite;
+    animation: rotate 20s linear infinite, glowShift 8s infinite alternate;
     cursor: pointer;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    will-change: transform, box-shadow;
 }
 
 .album-art-circle.paused {
     animation-play-state: paused;
+}
+
+@keyframes glowShift {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+
+    100% {
+        filter: hue-rotate(360deg);
+    }
 }
 
 @keyframes rotate {

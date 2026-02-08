@@ -512,8 +512,6 @@ function updatePlayPauseButton(isPlaying) {
 
 // Equalizer
 function startEqualizer() {
-    const equalizer = document.getElementById('equalizer');
-    if (equalizer) equalizer.classList.remove('paused');
 
     if (equalizerInterval) clearInterval(equalizerInterval);
 
@@ -521,33 +519,26 @@ function startEqualizer() {
     const updateInterval = isMobile ? 80 : 50;
 
     equalizerInterval = setInterval(() => {
-        if (!eqBars.length) return;
-        eqBars.forEach((bar, index) => {
-            const baseHeight = 20;
-            const maxHeight = isMobile ? 100 : 140;
-            const time = Date.now() / 1000;
-            const frequency = 0.5 + (index * 0.1);
-            const phase = index * 0.3;
-            const wave1 = Math.sin(time * frequency + phase) * 0.4;
-            const wave2 = Math.sin(time * frequency * 2 + phase) * 0.3;
-            const random = (Math.random() - 0.5) * 0.3;
-            const normalized = (wave1 + wave2 + random + 1) / 2;
-            const height = baseHeight + (normalized * (maxHeight - baseHeight));
-            bar.style.height = `${height}px`;
-        });
+        const time = Date.now() / 1000;
+
+        // Simulating high-energy beat energy
+        const wave1 = Math.sin(time * 3.0) * 0.6;
+        const wave2 = Math.sin(time * 6.0) * 0.4;
+        const random = (Math.random() - 0.5) * 0.3;
+        const avgLow = Math.max(0, (wave1 + wave2 + random + 0.5));
+
+        // Disc Pulse & Vibrant Color Glow
+        const albumArt = document.getElementById('albumArtCircle');
+        if (albumArt) {
+            const scale = 1.0 + (avgLow * 0.1);
+            const shadowBlur = 30 + (avgLow * 80);
+            albumArt.style.transform = `scale(${scale})`;
+            albumArt.style.boxShadow = `0 0 ${shadowBlur}px rgba(139, 92, 246, ${0.4 + avgLow * 0.5})`;
+        }
 
         // Visualizer reactive effects
         const vizContainer = document.getElementById('visualizerContainer');
         if (vizContainer && vizContainer.classList.contains('active')) {
-            let avgLow = 0;
-            const lowCount = 6;
-            for (let i = 0; i < lowCount; i++) {
-                if (eqBars[i]) {
-                    const h = parseFloat(eqBars[i].style.height);
-                    avgLow += h / 140;
-                }
-            }
-            avgLow /= lowCount;
 
             const iframe = document.querySelector('#player iframe');
             const overlay = document.querySelector('.visualizer-overlay');
@@ -580,13 +571,15 @@ function startEqualizer() {
 }
 
 function stopEqualizer() {
-    const equalizer = document.getElementById('equalizer');
-    if (equalizer) equalizer.classList.add('paused');
     if (equalizerInterval) {
         clearInterval(equalizerInterval);
         equalizerInterval = null;
     }
-    eqBars.forEach(bar => { bar.style.height = '20px'; });
+    const albumArt = document.getElementById('albumArtCircle');
+    if (albumArt) {
+        albumArt.style.transform = 'scale(1)';
+        albumArt.style.boxShadow = '0 0 50px rgba(139, 92, 246, 0.4)';
+    }
 }
 
 function toggleVisualizer() {
