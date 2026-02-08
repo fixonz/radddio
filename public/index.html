@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Radddio - Live Music Streaming</title>
+    <meta name="description"
+        content="Live music streaming platform where DJs play music and listeners tune in together">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <!-- Profile Setup Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h1 class="welcome-title"><i data-lucide="music"></i> Welcome to Radddio</h1>
+            <p>Set up your profile to join the party</p>
+
+            <div class="profile-setup">
+                <div class="avatar-selection">
+                    <label>Choose Your Avatar</label>
+                    <div class="avatar-grid" id="avatarGrid">
+                        <!-- Avatars will be generated here -->
+                    </div>
+                </div>
+
+                <div class="username-input">
+                    <label for="usernameInput">Username</label>
+                    <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20">
+                </div>
+
+                <div class="dj-toggle">
+                    <label>
+                        <input type="checkbox" id="djCheckbox">
+                        <span>Join as DJ (can control music)</span>
+                    </label>
+                </div>
+
+                <button id="joinButton" class="primary-button">Join Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon"><i data-lucide="radio"></i></span>
+                <h1>Radddio</h1>
+            </div>
+            <div class="header-stats">
+                <div class="stat">
+                    <span class="stat-icon"><i data-lucide="users"></i></span>
+                    <span id="listenerCount">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-icon"><i data-lucide="music-2"></i></span>
+                    <span id="songCount">0</span>
+                </div>
+            </div>
+            <button id="profileButton" class="icon-button">
+                <span id="headerAvatar"><i data-lucide="user"></i></span>
+            </button>
+        </header>
+
+        <!-- Mobile Navigation Tabs -->
+        <div class="mobile-tabs" style="display: none;">
+            <div class="mobile-tab active" data-tab="player"><i data-lucide="disc"></i> Player</div>
+            <div class="mobile-tab" data-tab="users"><i data-lucide="users"></i> Users</div>
+            <div class="mobile-tab" data-tab="chat"><i data-lucide="message-square"></i> Chat</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Sidebar - Users -->
+            <aside class="sidebar left-sidebar">
+                <div class="sidebar-header">
+                    <h2><i data-lucide="headset"></i> Listeners</h2>
+                </div>
+                <div id="userList" class="user-list">
+                    <!-- Users will be populated here -->
+                </div>
+            </aside>
+
+            <!-- Center - Player -->
+            <main class="player-section">
+                <!-- Hidden YouTube Player (audio only) -->
+                <div id="player" style="position: absolute; left: -9999px; width: 1px; height: 1px;"></div>
+
+                <!-- Circular Album Art Display -->
+                <div class="album-art-container">
+                    <div id="noSongPlaceholder" class="no-song-placeholder">
+                        <div class="placeholder-content">
+                            <span class="placeholder-icon"><i data-lucide="music"></i></span>
+                            <h2>No song playing</h2>
+                            <p>Waiting for DJ to start the music...</p>
+                        </div>
+                    </div>
+                    <div id="albumArtCircle" class="album-art-circle" style="display: none;">
+                        <img id="albumArtImage" src="" alt="Album Art">
+                        <div class="vinyl-effect"></div>
+                        <div class="play-indicator" id="playIndicator">
+                            <i data-lucide="play"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equalizer Visualization -->
+                <div class="equalizer-container">
+                    <div class="equalizer" id="equalizer">
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Now Playing Info -->
+                <div class="now-playing" id="nowPlaying">
+                    <div class="song-info">
+                        <h3 id="songTitle">No song playing</h3>
+                        <p id="songArtist">Waiting for music...</p>
+                    </div>
+                    <div class="volume-control">
+                        <span class="volume-icon" id="volumeIcon"><i data-lucide="volume-2"></i></span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="50" class="volume-slider">
+                        <span class="volume-value" id="volumeValue">50%</span>
+                    </div>
+                </div>
+
+                <!-- DJ Controls -->
+                <div id="djControls" class="dj-controls" style="display: none;">
+                    <div class="add-song-section">
+                        <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube URL here..."
+                            class="url-input">
+                        <button id="addSongButton" class="primary-button">
+                            <i data-lucide="plus"></i> Play
+                        </button>
+                    </div>
+                    <div class="playback-controls">
+                        <button id="playPauseButton" class="control-button">
+                            <span id="playPauseIcon"><i data-lucide="play"></i></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Playlist History -->
+                <div class="playlist-section">
+                    <h2><i data-lucide="list-music"></i> Playlist History</h2>
+                    <div id="playlistHistory" class="playlist-history">
+                        <p class="empty-state">No songs played yet</p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Sidebar - Chat -->
+            <aside class="sidebar right-sidebar">
+                <div class="sidebar-header">
+                    <h2><i data-lucide="message-square"></i> Chat</h2>
+                </div>
+                <div id="chatMessages" class="chat-messages">
+                    <!-- Messages will be populated here -->
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="500">
+                    <button id="sendMessageButton" class="send-button"><i data-lucide="send"></i></button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="app.js"></script>
+    <script src="mobile.js"></script>
+</body>
+
+</html>

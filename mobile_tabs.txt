@@ -1,0 +1,6 @@
+        <!-- Mobile Navigation Tabs -->
+        <div class="mobile-tabs" style="display: none;">
+            <div class="mobile-tab active" data-tab="player"> Player</div>
+            <div class="mobile-tab" data-tab="users"> Users</div>
+            <div class="mobile-tab" data-tab="chat"> Chat</div>
+        </div>
