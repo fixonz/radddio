@@ -118,9 +118,6 @@
                 <div id="albumArtCircle" class="album-art-circle" style="display: none;">
                     <img id="albumArtImage" src="" alt="Album Art">
                     <div class="vinyl-effect"></div>
-                    <div class="play-indicator" id="playIndicator">
-                        <i data-lucide="play"></i>
-                    </div>
                 </div>
             </div>
 
@@ -168,6 +165,16 @@
                     <h3 id="songTitle">No song playing</h3>
                     <p id="songArtist">Waiting for music...</p>
                 </div>
+
+                <div class="main-player-controls">
+                    <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
+                        <i data-lucide="maximize"></i>
+                    </button>
+                    <button id="playPauseButton" class="play-pause-btn-main">
+                        <span id="playPauseIcon"><i data-lucide="play"></i></span>
+                    </button>
+                </div>
+
                 <div class="volume-control">
                     <span class="volume-icon" id="volumeIcon"><i data-lucide="volume-2"></i></span>
                     <input type="range" id="volumeSlider" min="0" max="100" value="50" class="volume-slider">
@@ -180,15 +187,7 @@
                 <div class="add-song-section">
                     <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube URL here..." class="url-input">
                     <button id="addSongButton" class="primary-button">
-                        <i data-lucide="plus"></i> Play
-                    </button>
-                </div>
-                <div class="playback-controls">
-                    <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
-                        <i data-lucide="maximize"></i>
-                    </button>
-                    <button id="playPauseButton" class="control-button">
-                        <span id="playPauseIcon"><i data-lucide="play"></i></span>
+                        <i data-lucide="plus"></i> Add to Queue
                     </button>
                 </div>
             </div>

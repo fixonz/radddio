@@ -69,24 +69,15 @@ function onPlayerReady(event) {
 function onPlayerStateChange(event) {
     // Update album art rotation
     const albumArt = document.getElementById('albumArtCircle');
-    const playIndicator = document.getElementById('playIndicator');
 
     if (event.data === YT.PlayerState.PLAYING) {
         if (albumArt) albumArt.classList.remove('paused');
-        if (playIndicator) {
-            playIndicator.innerHTML = '<i data-lucide="pause"></i>';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            playIndicator.classList.remove('paused');
-        }
         startEqualizer();
+        updatePlayPauseButton(true);
     } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
         if (albumArt) albumArt.classList.add('paused');
-        if (playIndicator) {
-            playIndicator.innerHTML = '<i data-lucide="play"></i>';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            playIndicator.classList.add('paused');
-        }
         stopEqualizer();
+        updatePlayPauseButton(false);
     }
 
     // Sync playback state if DJ
