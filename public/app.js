@@ -634,10 +634,9 @@ function updatePlaylistDisplay(playlist) {
         item.className = 'playlist-item';
         const timeStr = new Date(song.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         item.innerHTML = `
-            <img src="${song.thumbnail}" alt="${song.title}" class="playlist-thumbnail">
             <div class="playlist-info">
                 <div class="playlist-title">${song.title}</div>
-                <div class="playlist-meta">Played by ${song.playedBy} at ${timeStr}</div>
+                <div class="playlist-meta">${song.playedBy} • ${timeStr}</div>
             </div>
         `;
         playlistHistory.appendChild(item);
@@ -655,7 +654,6 @@ function addToPlaylistDisplay(songData) {
         const item = document.createElement('div');
         item.className = 'playlist-item';
         item.innerHTML = `
-            <img src="${songData.thumbnail}" alt="${songData.title}" class="playlist-thumbnail">
             <div class="playlist-info">
                 <div class="playlist-title">${songData.title}</div>
                 <div class="playlist-meta">Playing now</div>
