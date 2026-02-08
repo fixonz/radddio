@@ -429,7 +429,12 @@ function updateAlbumArt(songData) {
     }
 
     if (albumArtImage) {
-        albumArtImage.src = `https://img.youtube.com/vi/${songData.videoId}/maxresdefault.jpg`;
+        const imageUrl = `https://img.youtube.com/vi/${songData.videoId}/maxresdefault.jpg`;
+        albumArtImage.src = imageUrl;
+
+        // Update visualizer background if it exists
+        const vizBg = document.getElementById('vizBackground');
+        if (vizBg) vizBg.style.backgroundImage = `url(${imageUrl})`;
     }
 }
 
@@ -555,13 +560,24 @@ function startEqualizer() {
 
             const iframe = document.querySelector('#player iframe');
             const overlay = document.querySelector('.visualizer-overlay');
+            const vizBg = document.getElementById('vizBackground');
 
-            if (iframe) {
-                // Dynamic Zoom based on "beat"
-                const scale = 1.05 + (avgLow * 0.15); // Zoom between 5% and 20%
-                iframe.style.transform = `scale(${scale})`;
-                // Subtle RGB shift simulation via filter
-                iframe.style.filter = `contrast(${100 + avgLow * 50}%) brightness(${80 + avgLow * 40}%) saturate(${100 + avgLow * 100}%)`;
+            if (vizBg) {
+                // Dynamic Zoom & Intensity based on "beat"
+                const scale = 1.0 + (avgLow * 0.2); // Zoom between 0% and 15%
+                vizBg.style.transform = `scale(${scale})`;
+
+                // Reactive Blur and Brightness
+                const blur = 30 - (avgLow * 25); // Clearer on loud beats
+                const bright = 0.5 + (avgLow * 1.0);
+                vizBg.style.filter = `blur(${blur}px) brightness(${bright})`;
+
+                // Trigger Glitch on high energy
+                if (avgLow > 0.8) {
+                    vizBg.classList.add('glitch');
+                } else {
+                    vizBg.classList.remove('glitch');
+                }
             }
 
             if (overlay) {
