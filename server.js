@@ -13,26 +13,43 @@ const bcrypt = require('bcryptjs');
 
 const PORT = process.env.PORT || 3000;
 
+console.log('🏁 Starting FREq Server...');
+
 // Simple JSON-based database for users and frequencies
 const DB_FILE = path.join(__dirname, 'db.json');
 
 // Initialize DB with defaults if it doesn't exist
 if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({
-        users: [],
-        frequencies: {},
-        globalStats: {
-            topSongs: {} // videoId: { title, count }
-        }
-    }, null, 2));
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify({
+            users: [],
+            frequencies: {},
+            globalStats: {
+                topSongs: {}
+            }
+        }, null, 2));
+        console.log('📦 Database initialized');
+    } catch (err) {
+        console.error('❌ Database initialization failed:', err);
+    }
 }
 
 function readDB() {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    try {
+        const content = fs.readFileSync(DB_FILE, 'utf8');
+        return JSON.parse(content || '{}');
+    } catch (err) {
+        console.error('❌ Database read failed, resetting to defaults:', err);
+        return { users: [], frequencies: {}, globalStats: { topSongs: {} } };
+    }
 }
 
 function writeDB(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    } catch (err) {
+        console.error('❌ Database write failed:', err);
+    }
 }
 
 app.use(express.json());
@@ -288,4 +305,4 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-http.listen(PORT, () => console.log(`⚡ FREq running on port ${PORT}`));
+http.listen(PORT, '0.0.0.0', () => console.log(`⚡ FREq running on port ${PORT}`));
