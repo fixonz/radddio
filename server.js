@@ -35,12 +35,13 @@ if (!fs.existsSync(DB_FILE)) {
 }
 
 function readDB() {
+    const defaults = { users: [], frequencies: {}, globalStats: { topSongs: {} } };
     try {
         const content = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(content || '{}');
+        return { ...defaults, ...JSON.parse(content || '{}') };
     } catch (err) {
         console.error('❌ Database read failed, resetting to defaults:', err);
-        return { users: [], frequencies: {}, globalStats: { topSongs: {} } };
+        return defaults;
     }
 }
 
