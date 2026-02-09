@@ -1,12 +1,23 @@
 // Socket.IO connection
 const socket = io();
 
-// User data
+// Project Branding
+const BRAND_NAME = 'FREq';
+
+// App State
 let currentUser = {
     username: '',
-    avatar: 'music',
-    isDJ: false
+    avatar: 'zap',
+    isHost: false,
+    token: null
 };
+
+let currentFreq = {
+    slug: 'global',
+    isOwner: false
+};
+
+let authMode = 'guest'; // 'guest', 'register', 'login'
 
 // YouTube Player
 let player;
@@ -15,29 +26,124 @@ let currentVideoId = null;
 
 // Equalizer animation
 let equalizerInterval = null;
-let eqBars = [];
 
 // Playlist State
 let isPlaylistExpanded = false;
 let fullPlaylist = [];
 
-// Avatar options (Lucide icon names)
+// Avatar options
 const avatarOptions = [
-    'music', 'headset', 'guitar', 'mic-2', 'speaker',
-    'drum', 'disc', 'radio', 'star', 'heart',
-    'zap', 'flame', 'smile', 'glasses', 'crown'
+    'zap', 'flame', 'sparkles', 'smile', 'glasses',
+    'music', 'headset', 'disc', 'radio', 'mic-2',
+    'heart', 'star', 'crown', 'ghost', 'cat'
 ];
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    checkLocalSession();
+    parseRoute();
     initializeProfileModal();
     setupEventListeners();
-    eqBars = document.querySelectorAll('.eq-bar');
-    // Initial icon creation
+
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
 });
+
+function checkLocalSession() {
+    const saved = localStorage.getItem('freq_user');
+    if (saved) {
+        try {
+            const user = JSON.parse(saved);
+            currentUser.username = user.username;
+            currentUser.avatar = user.avatar;
+            currentUser.isHost = false;
+
+            // Show logout button if logged in
+            const logoutBtn = document.getElementById('logoutButton');
+            if (logoutBtn) logoutBtn.style.display = 'block';
+        } catch (e) {
+            localStorage.removeItem('freq_user');
+        }
+    }
+}
+
+function parseRoute() {
+    const path = window.location.pathname;
+    const match = path.match(/^\/f\/([^/]+)/);
+
+    if (match) {
+        currentFreq.slug = match[1];
+        showAppView('freq');
+    } else {
+        showAppView('home');
+    }
+}
+
+function showAppView(view) {
+    const home = document.getElementById('home');
+    const app = document.getElementById('app');
+    const modal = document.getElementById('profileModal');
+
+    if (view === 'home') {
+        home.style.display = 'flex';
+        app.style.display = 'none';
+        modal.style.display = 'none';
+        loadDiscoveryData();
+    } else {
+        home.style.display = 'none';
+        // Auto-join guest if no session
+        if (!currentUser.username) {
+            autoGuestJoin();
+        } else {
+            app.style.display = 'flex';
+        }
+    }
+}
+
+async function loadDiscoveryData() {
+    try {
+        const res = await fetch('/api/discovery');
+        const data = await res.json();
+        renderDiscovery(data);
+    } catch (err) {
+        console.error('Discovery failed', err);
+    }
+}
+
+// Auth Mode Toggle
+window.setAuthMode = (mode) => {
+    authMode = mode;
+    const passwordGroup = document.getElementById('passwordGroup');
+    const avatarSection = document.getElementById('avatarSection');
+    const guestDjToggle = document.getElementById('guestDjToggle');
+    const joinBtn = document.getElementById('joinButton');
+    const subtext = document.getElementById('modalSubtext');
+
+    // Reset tabs
+    document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+
+    if (mode === 'guest') {
+        passwordGroup.style.display = 'none';
+        avatarSection.style.display = 'block';
+        guestDjToggle.style.display = 'block';
+        joinBtn.textContent = 'Join FREQ';
+        subtext.textContent = 'Sync your FREQ with others in real-time';
+    } else if (mode === 'register') {
+        passwordGroup.style.display = 'block';
+        avatarSection.style.display = 'block';
+        guestDjToggle.style.display = 'none';
+        joinBtn.textContent = 'Create Identity';
+        subtext.textContent = 'Claim your permanent frequency handle';
+    } else {
+        passwordGroup.style.display = 'block';
+        avatarSection.style.display = 'none';
+        guestDjToggle.style.display = 'none';
+        joinBtn.textContent = 'Sign In';
+        subtext.textContent = 'Welcome back to the FREQ';
+    }
+};
 
 // Initialize YouTube Player API
 function onYouTubeIframeAPIReady() {
@@ -54,55 +160,55 @@ function onYouTubeIframeAPIReady() {
         },
         events: {
             onReady: onPlayerReady,
-            onStateChange: onPlayerStateChange
+            onStateChange: onPlayerStateChange,
+            onError: onPlayerError
         }
     });
 }
 
 function onPlayerReady(event) {
     isPlayerReady = true;
-    console.log('YouTube player ready');
-
-    // Set initial volume from slider
     const volumeSlider = document.getElementById('volumeSlider');
-    if (volumeSlider) {
-        player.setVolume(volumeSlider.value);
-    }
+    if (volumeSlider) player.setVolume(volumeSlider.value);
 }
 
 function onPlayerStateChange(event) {
-    // Update album art rotation
     const albumArt = document.getElementById('albumArtCircle');
 
     if (event.data === YT.PlayerState.PLAYING) {
         if (albumArt) albumArt.classList.remove('paused');
-        startEqualizer();
-        updatePlayPauseButton(true);
+        startFreqSync();
     } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
         if (albumArt) albumArt.classList.add('paused');
-        stopEqualizer();
-        updatePlayPauseButton(false);
+        stopFreqSync();
     }
 
-    // Sync playback state if DJ
-    if (currentUser.isDJ) {
+    if (currentUser.isHost) {
         const isPlaying = event.data === YT.PlayerState.PLAYING;
         socket.emit('toggle-playback', {
             isPlaying: isPlaying,
             currentTime: player.getCurrentTime()
         });
-        updatePlayPauseButton(isPlaying);
     }
 }
 
-// Profile Modal
+function onPlayerError(event) {
+    console.error('📺 YouTube Player Error:', event.data);
+    const errorMessages = {
+        2: 'Invalid video ID',
+        100: 'Video not found or private',
+        101: 'Embed blocked by owner',
+        150: 'Embed blocked by owner'
+    };
+    const msg = errorMessages[event.data] || 'Unknown playback error';
+    console.warn(`⚠️ FREQ Warning: ${msg}`);
+}
+
 function initializeProfileModal() {
     const avatarGrid = document.getElementById('avatarGrid');
     if (!avatarGrid) return;
 
     avatarGrid.innerHTML = '';
-
-    // Generate avatar options
     avatarOptions.forEach((iconName, index) => {
         const avatarOption = document.createElement('div');
         avatarOption.className = 'avatar-option';
@@ -115,9 +221,7 @@ function initializeProfileModal() {
         }
 
         avatarOption.addEventListener('click', () => {
-            document.querySelectorAll('.avatar-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
             avatarOption.classList.add('selected');
             currentUser.avatar = iconName;
         });
@@ -127,274 +231,251 @@ function initializeProfileModal() {
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    // Generate random username
-    const randomNames = ['MusicLover', 'BeatMaster', 'SoundWave', 'VibeKing', 'MelodyQueen', 'RhythmNinja', 'BassHead', 'TuneSeeker'];
-    const randomName = randomNames[Math.floor(Math.random() * randomNames.length)] + Math.floor(Math.random() * 1000);
+    // Random Guest Name
+    const randomFreqs = ['Flow', 'Echo', 'Neon', 'Static', 'Drift', 'Pulse', 'Wave', 'Void'];
+    const randomName = randomFreqs[Math.floor(Math.random() * randomFreqs.length)] + Math.floor(Math.random() * 99);
     const usernameInput = document.getElementById('usernameInput');
     if (usernameInput) usernameInput.value = randomName;
 }
 
+function autoGuestJoin() {
+    const randomFreqs = ['Flow', 'Echo', 'Neon', 'Static', 'Drift', 'Pulse', 'Wave', 'Void'];
+    const randomName = randomFreqs[Math.floor(Math.random() * randomFreqs.length)] + Math.floor(Math.random() * 99);
+    completeJoin(randomName, false);
+}
+
 function setupEventListeners() {
-    // Join button
     const joinButton = document.getElementById('joinButton');
-    if (joinButton) joinButton.addEventListener('click', joinRoom);
+    if (joinButton) joinButton.addEventListener('click', handleAuth);
 
-    // Enter key on username input
-    const usernameInput = document.getElementById('usernameInput');
-    if (usernameInput) {
-        usernameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') joinRoom();
-        });
-    }
-
-    // DJ Controls
     const addSongButton = document.getElementById('addSongButton');
     if (addSongButton) addSongButton.addEventListener('click', addSong);
 
-    const youtubeUrlInput = document.getElementById('youtubeUrlInput');
-    if (youtubeUrlInput) {
-        youtubeUrlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addSong();
-        });
-    }
-
-    // Playback control via Disc
     const albumArt = document.getElementById('albumArtCircle');
-    if (albumArt) albumArt.addEventListener('click', togglePlayback);
+    if (albumArt) albumArt.addEventListener('click', localTogglePlayback);
 
-    // Visualizer Controls
     const visualizerButton = document.getElementById('visualizerButton');
     if (visualizerButton) visualizerButton.addEventListener('click', toggleVisualizer);
 
     const closeVisualizer = document.getElementById('closeVisualizer');
     if (closeVisualizer) closeVisualizer.addEventListener('click', toggleVisualizer);
 
-    // Playlist Toggle
     const togglePlaylist = document.getElementById('togglePlaylist');
     if (togglePlaylist) {
         togglePlaylist.addEventListener('click', () => {
             isPlaylistExpanded = !isPlaylistExpanded;
             updatePlaylistDisplay(fullPlaylist);
-
-            const text = document.getElementById('playlistToggleText');
+            document.getElementById('playlistToggleText').textContent = isPlaylistExpanded ? 'Show Less' : 'View More';
             const icon = document.getElementById('playlistToggleIcon');
-            if (text) text.textContent = isPlaylistExpanded ? 'Show Less' : 'Show History';
-            if (icon) icon.setAttribute('data-lucide', isPlaylistExpanded ? 'chevron-up' : 'chevron-down');
+            icon.setAttribute('data-lucide', isPlaylistExpanded ? 'chevron-up' : 'chevron-down');
             if (typeof lucide !== 'undefined') lucide.createIcons();
         });
     }
 
-    // Volume Control
     const volumeSlider = document.getElementById('volumeSlider');
-    const volumeValue = document.getElementById('volumeValue');
-    const volumeIcon = document.getElementById('volumeIcon');
-
     if (volumeSlider) {
         volumeSlider.addEventListener('input', (e) => {
             const volume = e.target.value;
-            if (volumeValue) volumeValue.textContent = volume + '%';
-
-            if (isPlayerReady) {
-                player.setVolume(volume);
-            }
-
-            // Update icon based on volume
+            document.getElementById('volumeValue').textContent = volume + '%';
+            if (isPlayerReady) player.setVolume(volume);
             updateVolumeIcon(volume);
         });
     }
 
-    // Click volume icon to mute/unmute
-    if (volumeIcon && volumeSlider) {
-        volumeIcon.addEventListener('click', () => {
-            if (volumeSlider.value == 0) {
-                volumeSlider.value = 50;
-            } else {
-                volumeSlider.value = 0;
-            }
-            // Trigger input event manually
-            volumeSlider.dispatchEvent(new Event('input'));
-        });
-    }
-
-    // Chat
     const sendMessageButton = document.getElementById('sendMessageButton');
     if (sendMessageButton) sendMessageButton.addEventListener('click', sendMessage);
 
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-    }
-}
-
-function updateVolumeIcon(volume) {
-    const volumeIcon = document.getElementById('volumeIcon');
-    if (!volumeIcon) return;
-
-    let iconName = 'volume-2';
-    if (volume == 0) {
-        iconName = 'volume-x';
-    } else if (volume < 50) {
-        iconName = 'volume-1';
-    }
-
-    volumeIcon.innerHTML = `<i data-lucide="${iconName}"></i>`;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-function joinRoom() {
-    const usernameInput = document.getElementById('usernameInput');
-    const djCheckbox = document.getElementById('djCheckbox');
-
-    const username = usernameInput ? usernameInput.value.trim() : '';
-    const isDJ = djCheckbox ? djCheckbox.checked : false;
-
-    if (!username) {
-        alert('Please enter a username');
-        return;
-    }
-
-    currentUser.username = username;
-    currentUser.isDJ = isDJ;
-
-    // Hide modal, show app
-    document.getElementById('profileModal').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-
-    // Update header avatar
-    const headerAvatar = document.getElementById('headerAvatar');
-    if (headerAvatar) {
-        headerAvatar.innerHTML = `<i data-lucide="${currentUser.avatar}"></i>`;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-
-    // Show DJ controls if DJ
-    if (currentUser.isDJ) {
-        const djControls = document.getElementById('djControls');
-        if (djControls) djControls.style.display = 'block';
-    }
-
-    // Join socket room
-    socket.emit('user-join', currentUser);
-
-    // Add click listener to album art
-    const albumArt = document.getElementById('albumArtCircle');
-    if (albumArt) {
-        albumArt.addEventListener('click', () => {
-            if (isPlayerReady) {
-                const state = player.getPlayerState();
-                if (state === YT.PlayerState.PLAYING) {
-                    player.pauseVideo();
-                } else {
-                    player.playVideo();
-                }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
             }
         });
     }
 
-    // Initialize mobile tabs
-    if (typeof initMobileTabs === 'function') {
-        initMobileTabs();
+    // Discovery logic
+    const startBtn = document.getElementById('startYourFreqBtn');
+    if (startBtn) {
+        // If logged in, button should take you to YOUR freq
+        if (currentUser.username && !currentUser.username.startsWith('Guest')) {
+            startBtn.innerHTML = `<i data-lucide="zap"></i> Get on YOUR FREQ`;
+            startBtn.addEventListener('click', () => {
+                window.location.href = `/f/${currentUser.username.toLowerCase()}`;
+            });
+        } else {
+            startBtn.addEventListener('click', () => {
+                const input = document.getElementById('newFreqSlugHome');
+                const name = input.value.trim();
+                if (name) {
+                    window.location.href = `/f/${name.toLowerCase().replace(/\s+/g, '-')}`;
+                } else {
+                    alert('Enter a name or Register to claim a FREQ');
+                }
+            });
+        }
     }
+
+    const logoutBtn = document.getElementById('logoutButton');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('freq_user');
+        window.location.href = '/';
+    });
+
+    // Share logic
+    const shareBtn = document.getElementById('shareFreqBtn');
+    if (shareBtn) shareBtn.addEventListener('click', shareCurrentFreq);
+}
+
+async function handleAuth() {
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value.trim();
+
+    if (!username) return alert('Username required');
+
+    if (authMode === 'guest') {
+        const isHost = document.getElementById('djCheckbox').checked;
+        completeJoin(username, isHost);
+    } else {
+        if (!password) return alert('Password required');
+        const endpoint = authMode === 'register' ? '/api/register' : '/api/login';
+
+        try {
+            const body = { username, password };
+            if (authMode === 'register') body.avatar = currentUser.avatar;
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+
+            if (data.avatar) currentUser.avatar = data.avatar;
+
+            // Remember across reloads
+            localStorage.setItem('freq_user', JSON.stringify({
+                username: data.username,
+                avatar: currentUser.avatar
+            }));
+
+            // Redirect to their unique FREQ
+            window.location.href = `/f/${data.username.toLowerCase()}`;
+        } catch (err) {
+            alert('Auth failed');
+        }
+    }
+}
+
+function completeJoin(username, isHost) {
+    currentUser.username = username;
+    currentUser.isHost = isHost;
+
+    document.getElementById('profileModal').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+
+    const headerAvatar = document.getElementById('headerAvatar');
+    if (headerAvatar) {
+        headerAvatar.innerHTML = `<i data-lucide="${currentUser.avatar}"></i>`;
+        lucide.createIcons();
+    }
+
+    if (currentUser.isHost) {
+        document.getElementById('djControls').style.display = 'flex';
+        document.getElementById('ownerTools').style.display = 'flex';
+    }
+
+    socket.emit('join-frequency', {
+        slug: currentFreq.slug,
+        user: currentUser
+    });
+
+    // Update UI slug display
+    const slugDisplay = document.getElementById('currentFreqSlug');
+    if (slugDisplay) slugDisplay.textContent = `/${currentFreq.slug}`;
 }
 
 // Socket Events
 socket.on('initial-state', (state) => {
     updateUserList(state.users);
 
-    // Load chat history
-    state.chatHistory.forEach(msg => {
-        addChatMessage(msg);
-    });
-
-    // Load current song if playing
-    if (state.playbackState.videoId) {
-        loadVideo(state.playbackState);
+    // Server tells us if we are the host
+    if (state.isHost) {
+        currentUser.isHost = true;
+        document.getElementById('djControls').style.display = 'flex';
+        document.getElementById('ownerTools').style.display = 'flex';
     }
 
-    // Load playlist
-    if (state.playlist && state.playlist.length > 0) {
-        updatePlaylistDisplay(state.playlist);
-    }
+    state.chatHistory.forEach(msg => addChatMessage(msg));
+    if (state.playbackState.videoId) loadVideo(state.playbackState);
+    if (state.playlist) updatePlaylistDisplay(state.playlist);
 });
 
-socket.on('user-list-update', (users) => {
-    updateUserList(users);
-});
+socket.on('user-list-update', (users) => updateUserList(users));
 
 socket.on('play-song', (songData) => {
     loadVideo(songData);
     updateNowPlaying(songData);
     updateAlbumArt(songData);
     addToPlaylistDisplay(songData);
-    startEqualizer();
+    startFreqSync();
 });
 
 socket.on('playback-state-change', (state) => {
     if (!isPlayerReady) return;
-
-    if (state.isPlaying) {
-        player.playVideo();
-        startEqualizer();
-    } else {
-        player.pauseVideo();
-        stopEqualizer();
-    }
-    updatePlayPauseButton(state.isPlaying);
+    state.isPlaying ? player.playVideo() : player.pauseVideo();
 });
 
 socket.on('seek', (data) => {
-    if (!isPlayerReady) return;
-    player.seekTo(data.time, true);
+    if (isPlayerReady) player.seekTo(data.time, true);
 });
 
-socket.on('chat-message', (message) => {
-    addChatMessage(message);
+socket.on('connect', () => {
+    console.log('⚡ Connected to Wavefront');
+    if (currentUser.username && currentFreq.slug) {
+        socket.emit('join-frequency', {
+            slug: currentFreq.slug,
+            user: currentUser
+        });
+    }
 });
 
-// User List
+socket.on('chat-message', (message) => addChatMessage(message));
+
+socket.on('reaction', (emoji) => showReaction(emoji));
+
+// UIs
 function updateUserList(users) {
     const userList = document.getElementById('userList');
-    const listenerCount = document.getElementById('listenerCount');
-
     if (userList) {
         userList.innerHTML = '';
         users.forEach(user => {
-            const userItem = document.createElement('div');
-            userItem.className = 'user-item';
-            if (user.isDJ) userItem.classList.add('dj');
-
-            userItem.innerHTML = `
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            if (user.isHost) item.classList.add('dj');
+            item.innerHTML = `
                 <div class="user-avatar"><i data-lucide="${user.avatar || 'user'}"></i></div>
                 <div class="user-info">
                     <div class="user-name">${user.username}</div>
-                    ${user.isDJ ? '<span class="user-badge">DJ</span>' : ''}
+                    ${user.isHost ? '<span class="user-badge">Host</span>' : ''}
                 </div>
             `;
-
-            userList.appendChild(userItem);
+            userList.appendChild(item);
         });
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        lucide.createIcons();
     }
-
-    if (listenerCount) listenerCount.textContent = users.length;
+    document.getElementById('listenerCount').textContent = users.length;
 }
 
-// Video Player & Album Art
 function loadVideo(songData) {
-    if (!isPlayerReady) {
-        setTimeout(() => loadVideo(songData), 500);
-        return;
-    }
+    if (!isPlayerReady) return setTimeout(() => loadVideo(songData), 500);
 
-    // Check if we're already playing this video to avoid unnecessary restarts
     if (currentVideoId === songData.videoId) {
         if (songData.isPlaying) {
             player.playVideo();
-            // Sync if offset is too large
-            const currentTime = player.getCurrentTime();
-            if (songData.currentTime && Math.abs(currentTime - songData.currentTime) > 3) {
+            if (Math.abs(player.getCurrentTime() - songData.currentTime) > 3) {
                 player.seekTo(songData.currentTime, true);
             }
         } else {
@@ -404,304 +485,265 @@ function loadVideo(songData) {
     }
 
     currentVideoId = songData.videoId;
-
-    // Load video and seek to current position
     player.loadVideoById({
         videoId: songData.videoId,
         startSeconds: songData.currentTime || 0
     });
-
-    if (songData.isPlaying) {
-        player.playVideo();
-    } else {
-        player.pauseVideo();
-    }
-
-    // Update UI
-    if (songData.title) updateNowPlaying(songData);
-    if (songData.videoId) updateAlbumArt(songData);
-
-    // Update Visualizer info
-    const vizTitle = document.getElementById('vizTitle');
-    const vizArtist = document.getElementById('vizArtist');
-    if (vizTitle && songData.title) vizTitle.textContent = songData.title;
-    if (vizArtist) vizArtist.textContent = 'Playing on Radddio';
+    songData.isPlaying ? player.playVideo() : player.pauseVideo();
+    updateNowPlaying(songData);
+    updateAlbumArt(songData);
 }
 
 function updateAlbumArt(songData) {
-    const placeholder = document.getElementById('noSongPlaceholder');
-    const albumArtCircle = document.getElementById('albumArtCircle');
-    const albumArtImage = document.getElementById('albumArtImage');
+    document.getElementById('noSongPlaceholder').style.display = 'none';
+    const circle = document.getElementById('albumArtCircle');
+    circle.style.display = 'block';
+    circle.classList.remove('paused');
+    document.getElementById('albumArtImage').src = `https://img.youtube.com/vi/${songData.videoId}/maxresdefault.jpg`;
 
-    if (placeholder) placeholder.style.display = 'none';
-    if (albumArtCircle) {
-        albumArtCircle.style.display = 'block';
-        albumArtCircle.classList.remove('paused');
-    }
-
-    if (albumArtImage) {
-        const imageUrl = `https://img.youtube.com/vi/${songData.videoId}/maxresdefault.jpg`;
-        albumArtImage.src = imageUrl;
-
-        // Update visualizer background if it exists
-        const vizBg = document.getElementById('vizBackground');
-        if (vizBg) vizBg.style.backgroundImage = `url(${imageUrl})`;
-    }
+    const vizBg = document.getElementById('vizBackground');
+    if (vizBg) vizBg.style.backgroundImage = `url(https://img.youtube.com/vi/${songData.videoId}/maxresdefault.jpg)`;
 }
 
 function updateNowPlaying(songData) {
-    const songTitle = document.getElementById('songTitle');
-    const songArtist = document.getElementById('songArtist');
-
-    if (songTitle) songTitle.textContent = songData.title || 'Now Playing';
-    if (songArtist) songArtist.textContent = 'Playing on Radddio';
+    document.getElementById('songTitle').textContent = songData.title || 'Syncing...';
+    document.getElementById('songArtist').textContent = `In FREQ: ${currentFreq.slug}`;
 }
 
-// DJ Controls
 function addSong() {
-    const urlInput = document.getElementById('youtubeUrlInput');
-    const url = urlInput ? urlInput.value.trim() : '';
-
+    const input = document.getElementById('youtubeUrlInput');
+    const url = input.value.trim();
     if (!url) return;
 
     const videoId = extractVideoId(url);
-    if (!videoId) {
-        alert('Invalid YouTube URL');
-        return;
-    }
+    if (!videoId) return alert('Bad Link');
 
-    fetchVideoInfo(videoId).then(videoInfo => {
-        socket.emit('play-song', {
-            videoId: videoId,
-            title: videoInfo.title,
-            thumbnail: videoInfo.thumbnail
-        });
-        if (urlInput) urlInput.value = '';
-    });
+    fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+        .then(r => r.json())
+        .then(data => {
+            socket.emit('play-song', {
+                videoId: videoId,
+                title: data.title,
+                thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+            });
+            input.value = '';
+        })
+        .catch(() => alert('Could not catch wave'));
 }
 
 function extractVideoId(url) {
-    const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-        /^([a-zA-Z0-9_-]{11})$/
-    ];
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) return match[1];
-    }
-    return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+    return match ? match[1] : (url.length === 11 ? url : null);
 }
 
-async function fetchVideoInfo(videoId) {
-    try {
-        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-        const data = await response.json();
-        return {
-            title: data.title || 'YouTube Video',
-            thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-        };
-    } catch (error) {
-        return {
-            title: 'YouTube Video',
-            thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-        };
-    }
-}
-
-function togglePlayback() {
+function localTogglePlayback() {
     if (!isPlayerReady) return;
-
-    const state = player.getPlayerState();
-    const isPlaying = state === YT.PlayerState.PLAYING;
-
-    socket.emit('toggle-playback', {
-        isPlaying: !isPlaying,
-        currentTime: player.getCurrentTime()
-    });
-
-    updatePlayPauseButton(!isPlaying);
-}
-
-function updatePlayPauseButton(isPlaying) {
-    const iconSpan = document.getElementById('playPauseIcon');
-    if (iconSpan) {
-        iconSpan.innerHTML = isPlaying ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+    const isPlaying = player.getPlayerState() === YT.PlayerState.PLAYING;
+    if (currentUser.isHost) {
+        socket.emit('toggle-playback', { isPlaying: !isPlaying, currentTime: player.getCurrentTime() });
+    } else {
+        isPlaying ? player.pauseVideo() : player.playVideo();
     }
 }
 
-// Equalizer
-function startEqualizer() {
-
+function startFreqSync() {
     if (equalizerInterval) clearInterval(equalizerInterval);
-
-    const isMobile = window.innerWidth <= 768;
-    const updateInterval = isMobile ? 80 : 50;
-
     equalizerInterval = setInterval(() => {
-        const time = Date.now() / 1000;
-
-        // Simulating high-energy beat energy
-        const wave1 = Math.sin(time * 3.0) * 0.6;
-        const wave2 = Math.sin(time * 6.0) * 0.4;
-        const random = (Math.random() - 0.5) * 0.3;
-        const avgLow = Math.max(0, (wave1 + wave2 + random + 0.5));
-
-        // Disc Pulse & Vibrant Color Glow
+        const energy = Math.random();
         const albumArt = document.getElementById('albumArtCircle');
+        const vizBg = document.getElementById('vizBackground');
+        const logos = document.querySelectorAll('.logo-icon');
+
         if (albumArt) {
-            const scale = 1.0 + (avgLow * 0.1);
-            const shadowBlur = 30 + (avgLow * 80);
+            const scale = 1.0 + (energy * 0.05);
+            const shadow = 30 + (energy * 50);
             albumArt.style.transform = `scale(${scale})`;
-            albumArt.style.boxShadow = `0 0 ${shadowBlur}px rgba(139, 92, 246, ${0.4 + avgLow * 0.5})`;
+            albumArt.style.boxShadow = `0 0 ${shadow}px rgba(168, 85, 247, ${0.4 + energy * 0.4})`;
         }
 
-        // Visualizer reactive effects
-        const vizContainer = document.getElementById('visualizerContainer');
-        if (vizContainer && vizContainer.classList.contains('active')) {
-
-            const iframe = document.querySelector('#player iframe');
-            const overlay = document.querySelector('.visualizer-overlay');
-            const vizBg = document.getElementById('vizBackground');
-
-            if (vizBg) {
-                // Dynamic Zoom & Intensity based on "beat"
-                const scale = 1.0 + (avgLow * 0.2); // Zoom between 0% and 15%
-                vizBg.style.transform = `scale(${scale})`;
-
-                // Reactive Blur and Brightness
-                const blur = 30 - (avgLow * 25); // Clearer on loud beats
-                const bright = 0.5 + (avgLow * 1.0);
-                vizBg.style.filter = `blur(${blur}px) brightness(${bright})`;
-
-                // Trigger Glitch on high energy
-                if (avgLow > 0.8) {
-                    vizBg.classList.add('glitch');
-                } else {
-                    vizBg.classList.remove('glitch');
-                }
-            }
-
-            if (overlay) {
-                overlay.style.opacity = 0.2 + (avgLow * 0.8);
-                overlay.style.boxShadow = `inset 0 0 ${100 + avgLow * 200}px rgba(139, 92, 246, ${0.3 + avgLow * 0.4})`;
-            }
+        if (logos.length > 0) {
+            const logoScale = 1.0 + (energy * 0.1);
+            logos.forEach(logo => logo.style.transform = `scale(${logoScale})`);
         }
-    }, updateInterval);
+
+        if (vizBg && energy > 0.85) {
+            vizBg.classList.add('glitch');
+            setTimeout(() => vizBg.classList.remove('glitch'), 100);
+        }
+    }, 100);
 }
 
-function stopEqualizer() {
-    if (equalizerInterval) {
-        clearInterval(equalizerInterval);
-        equalizerInterval = null;
-    }
+function stopFreqSync() {
+    if (equalizerInterval) clearInterval(equalizerInterval);
     const albumArt = document.getElementById('albumArtCircle');
+    const logos = document.querySelectorAll('.logo-icon');
     if (albumArt) {
         albumArt.style.transform = 'scale(1)';
-        albumArt.style.boxShadow = '0 0 50px rgba(139, 92, 246, 0.4)';
+        albumArt.style.boxShadow = '0 0 50px rgba(168, 85, 247, 0.4)';
     }
+    logos.forEach(logo => logo.style.transform = 'scale(1)');
 }
 
 function toggleVisualizer() {
-    const vizContainer = document.getElementById('visualizerContainer');
-    if (!vizContainer) return;
-
-    const isActive = vizContainer.classList.toggle('active');
-
-    // Update viz info if opening
-    if (isActive) {
-        const songTitle = document.getElementById('songTitle').textContent;
-        const songArtist = document.getElementById('songArtist').textContent;
-        const vizTitle = document.getElementById('vizTitle');
-        const vizArtist = document.getElementById('vizArtist');
-        if (vizTitle) vizTitle.textContent = songTitle;
-        if (vizArtist) vizArtist.textContent = songArtist;
-    }
+    document.getElementById('visualizerContainer').classList.toggle('active');
 }
 
-// Playlist
 function updatePlaylistDisplay(playlist) {
     fullPlaylist = playlist;
-    const playlistHistory = document.getElementById('playlistHistory');
-    const songCount = document.getElementById('songCount');
+    const container = document.getElementById('playlistHistory');
+    document.getElementById('songCount').textContent = playlist.length;
+    if (!container) return;
+    if (playlist.length === 0) return container.innerHTML = '<p class="empty-state">No FREQs yet.</p>';
 
-    if (songCount) songCount.textContent = playlist.length;
-    if (!playlistHistory) return;
-
-    if (playlist.length === 0) {
-        playlistHistory.innerHTML = '<p class="empty-state">No songs played yet</p>';
-        return;
-    }
-
-    playlistHistory.innerHTML = '';
-
-    // Show last 5 if collapsed, else last 20
+    container.innerHTML = '';
     const limit = isPlaylistExpanded ? 20 : 5;
-    const displayedSongs = [...playlist].reverse().slice(0, limit);
-
-    displayedSongs.forEach(song => {
+    [...playlist].reverse().slice(0, limit).forEach(song => {
         const item = document.createElement('div');
         item.className = 'playlist-item';
-        const timeStr = new Date(song.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (song.isPinned) item.classList.add('pinned-track');
         item.innerHTML = `
             <div class="playlist-info">
                 <div class="playlist-title">${song.title}</div>
-                <div class="playlist-meta">${song.playedBy} • ${timeStr}</div>
+                <div class="playlist-meta">${song.playedBy} • ${new Date(song.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
+            ${currentUser.isHost ? `<button class="pin-song-btn ${song.isPinned ? 'active' : ''}" onclick="toggleSongPin('${song.videoId}')"><i data-lucide="star"></i></button>` : ''}
         `;
-        playlistHistory.appendChild(item);
+        container.appendChild(item);
     });
+    lucide.createIcons();
 }
 
-function addToPlaylistDisplay(songData) {
-    // Since we now use a centralized updatePlaylistDisplay call usually,
-    // we'll just push to local state and re-render to keep it simple and consistent.
-    if (!songData.playedAt) songData.playedAt = new Date();
-    if (!songData.playedBy) songData.playedBy = 'DJ';
+window.closeAuthModal = () => {
+    document.getElementById('profileModal').style.display = 'none';
+}
 
-    fullPlaylist.push(songData);
+function renderDiscovery(data) {
+    const topList = document.getElementById('topSongsList');
+    const activeList = document.getElementById('activeFreqsList');
+    const isLoggedIn = currentUser.username && !currentUser.username.startsWith('Guest');
+
+    // Update Home Header message
+    const homeHeaderP = document.querySelector('.home-header p');
+    if (isLoggedIn) {
+        homeHeaderP.innerHTML = `Welcome back, <strong>${currentUser.username}</strong>. Your frequency is ready.`;
+    }
+
+    topList.innerHTML = data.topSongs.length ? '' : '<p class="empty">No stats yet.</p>';
+    data.topSongs.forEach((song, i) => {
+        const el = document.createElement('div');
+        el.className = 'compact-item';
+        el.innerHTML = `
+            <span class="rank">#${i + 1}</span>
+            <div class="item-info">
+                <div class="item-title">${song.title}</div>
+                <div class="item-meta">${song.count} plays platform-wide</div>
+            </div>
+        `;
+        topList.appendChild(el);
+    });
+
+    activeList.innerHTML = data.active.length ? '' : '<p class="empty">Scanning frequencies...</p>';
+    data.active.forEach(freq => {
+        const el = document.createElement('div');
+        el.className = 'compact-item clickable';
+        const isMine = isLoggedIn && freq.slug.toLowerCase() === currentUser.username.toLowerCase();
+        el.onclick = () => window.location.href = `/f/${freq.slug}`;
+        el.innerHTML = `
+            <div class="item-info">
+                <div class="item-title">/f/${freq.slug} ${isMine ? '<span class="user-badge">MINE</span>' : ''}</div>
+                <div class="item-meta">${freq.listeners} folk • ${freq.currentSong || 'Pure Pulse'}</div>
+            </div>
+            <i data-lucide="chevron-right"></i>
+        `;
+        activeList.appendChild(el);
+    });
+    lucide.createIcons();
+}
+
+function addToPlaylistDisplay(song) {
+    fullPlaylist.push({ ...song, playedAt: Date.now(), playedBy: song.playedBy || 'Guest' });
     updatePlaylistDisplay(fullPlaylist);
 }
 
-// Chat
 function sendMessage() {
     const input = document.getElementById('chatInput');
-    const message = input ? input.value.trim() : '';
-    if (!message) return;
-    socket.emit('chat-message', message);
-    if (input) input.value = '';
+    const msg = input.value.trim();
+    if (!msg) return;
+    socket.emit('chat-message', msg);
+    input.value = '';
 }
 
 function addChatMessage(message) {
-    const chatMessages = document.getElementById('chatMessages');
-    if (!chatMessages) return;
-
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message ${message.type}`;
-
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `chat-message ${message.type}`;
     if (message.type === 'system') {
-        messageDiv.textContent = message.message;
+        div.textContent = message.message;
     } else {
-        const timeStr = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        messageDiv.innerHTML = `
+        const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = `
             <div class="chat-avatar"><i data-lucide="${message.avatar || 'user'}"></i></div>
             <div class="chat-content">
-                <div class="chat-header">
-                    <span class="chat-username">${message.username}</span>
-                    <span class="chat-time">${timeStr}</span>
-                </div>
-                <div class="chat-text">${escapeHtml(message.message)}</div>
+                <div class="chat-header"><span class="chat-username">${message.username}</span> <span class="chat-time">${time}</span></div>
+                <div class="chat-text">${message.message}</div>
             </div>
         `;
     }
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
 
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    // Performance optimization: only create icons for the new message
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons({
+            dataset: 'lucide',
+            root: div
+        });
+    }
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+window.closeCreateModal = () => document.getElementById('createModal').style.display = 'none';
+
+function toggleSongPin(videoId) {
+    if (!currentUser.isHost) return;
+    socket.emit('toggle-song-pin', { videoId });
+}
+
+socket.on('playlist-update', (playlist) => {
+    updatePlaylistDisplay(playlist);
+});
+
+function shareCurrentFreq() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        const slugDisplay = document.getElementById('currentFreqSlug');
+        const oldText = slugDisplay.textContent;
+        slugDisplay.textContent = 'LINK COPIED!';
+        slugDisplay.style.color = 'var(--accent-primary)';
+        setTimeout(() => {
+            slugDisplay.textContent = oldText;
+            slugDisplay.style.color = '';
+        }, 2000);
+    });
+}
+
+function sendReaction(emoji) {
+    socket.emit('reaction', emoji);
+}
+
+function showReaction(emoji) {
+    const container = document.querySelector('.album-art-container');
+    const el = document.createElement('div');
+    el.className = 'floating-reaction';
+    el.textContent = emoji;
+
+    // Random horizontal position
+    const left = 20 + Math.random() * 60;
+    el.style.left = `${left}%`;
+
+    container.appendChild(el);
+
+    // Remove after animation
+    setTimeout(() => {
+        el.remove();
+    }, 2000);
 }

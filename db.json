@@ -1,0 +1,170 @@
+{
+  "users": [
+    {
+      "username": "fixzzee",
+      "password": "$2b$10$SDAwo9.jZDsrGKrO9jPSn.yOiTiZ4HwKjGKLXDL9j6sOc7U7D6sv2"
+    }
+  ],
+  "frequencies": {
+    "global": {
+      "playbackState": {
+        "isPlaying": false,
+        "currentTime": 0,
+        "videoId": "lyTjfr00fJM",
+        "startedAt": null,
+        "title": "Muévete (Make A Move) (Spanish Version)",
+        "thumbnail": "https://img.youtube.com/vi/lyTjfr00fJM/maxresdefault.jpg"
+      },
+      "playlist": [
+        {
+          "videoId": "lyTjfr00fJM",
+          "title": "Muévete (Make A Move) (Spanish Version)",
+          "thumbnail": "https://img.youtube.com/vi/lyTjfr00fJM/maxresdefault.jpg",
+          "playedAt": 1770583212911,
+          "playedBy": "Static24"
+        }
+      ],
+      "chatHistory": [
+        {
+          "type": "system",
+          "message": "Static24 joined the FREQ",
+          "timestamp": 1770583211165
+        },
+        {
+          "type": "system",
+          "message": "Echo12 joined the FREQ",
+          "timestamp": 1770583362411
+        },
+        {
+          "type": "user",
+          "userId": "ai0nLRLOXwzcKuiLAAAF",
+          "username": "Echo12",
+          "avatar": "headset",
+          "message": "e",
+          "timestamp": 1770583429586
+        }
+      ],
+      "owner": null,
+      "pinnedMessage": "dont kill my vibe"
+    },
+    "seeea": {
+      "playbackState": {
+        "isPlaying": false,
+        "currentTime": 0,
+        "videoId": "kZbVO60o2Pk",
+        "startedAt": null,
+        "title": "NU' - Bentik Sesh #2",
+        "thumbnail": "https://img.youtube.com/vi/kZbVO60o2Pk/maxresdefault.jpg"
+      },
+      "playlist": [
+        {
+          "videoId": "kZbVO60o2Pk",
+          "title": "NU' - Bentik Sesh #2",
+          "thumbnail": "https://img.youtube.com/vi/kZbVO60o2Pk/maxresdefault.jpg",
+          "playedAt": 1770591674047,
+          "playedBy": "Drift43"
+        }
+      ],
+      "chatHistory": [
+        {
+          "type": "system",
+          "message": "Drift43 joined the FREQ",
+          "timestamp": 1770591643582
+        },
+        {
+          "type": "system",
+          "message": "Neon49 joined the FREQ",
+          "timestamp": 1770591689137
+        },
+        {
+          "type": "user",
+          "userId": "7jxnR8PC9Xu1ATVDAAAF",
+          "username": "Neon49",
+          "avatar": "zap",
+          "message": "eeea",
+          "timestamp": 1770591715484
+        },
+        {
+          "type": "system",
+          "message": "Drift62 joined the FREQ",
+          "timestamp": 1770591760359
+        },
+        {
+          "type": "user",
+          "userId": "8m8G3mPyFhUNVpMyAAAF",
+          "username": "Drift62",
+          "avatar": "zap",
+          "message": "e",
+          "timestamp": 1770591766736
+        }
+      ],
+      "owner": "Drift43",
+      "pinnedMessage": null
+    },
+    "a": {
+      "playbackState": {
+        "isPlaying": false,
+        "currentTime": 169.901,
+        "videoId": "nqnBnJWwn1c",
+        "startedAt": null,
+        "title": "Dyce - How Many Times?",
+        "thumbnail": "https://img.youtube.com/vi/nqnBnJWwn1c/maxresdefault.jpg"
+      },
+      "playlist": [
+        {
+          "videoId": "nqnBnJWwn1c",
+          "title": "Dyce - How Many Times?",
+          "thumbnail": "https://img.youtube.com/vi/nqnBnJWwn1c/maxresdefault.jpg",
+          "playedAt": 1770591948574,
+          "playedBy": "Void75"
+        }
+      ],
+      "chatHistory": [
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591918895
+        },
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591918914
+        },
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591949335
+        },
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591951283
+        },
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591954779
+        },
+        {
+          "type": "system",
+          "message": "Void75 joined the FREQ",
+          "timestamp": 1770591956266
+        }
+      ],
+      "owner": "Void75",
+      "pinnedMessage": null
+    }
+  },
+  "globalStats": {
+    "topSongs": {
+      "kZbVO60o2Pk": {
+        "title": "NU' - Bentik Sesh #2",
+        "count": 1
+      },
+      "nqnBnJWwn1c": {
+        "title": "Dyce - How Many Times?",
+        "count": 1
+      }
+    }
+  }
+}

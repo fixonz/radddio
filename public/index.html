@@ -4,61 +4,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Radddio - Live Music Streaming</title>
+    <title>FREq - Share Your FREQ</title>
     <meta name="description"
-        content="Live music streaming platform where DJs play music and listeners tune in together">
+        content="Personal music frequencies. Claim your FREQ, share your link, and listen together in perfect sync.">
+
+    <!-- OpenGraph / Social Meta -->
+    <meta property="og:title" content="FREq - Your Personal Music Frequency">
+    <meta property="og:description" content="Listen together in real-time. Pure FREQs, synchronized.">
+    <meta property="og:type" content="website">
+
     <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
-    <link rel="stylesheet" href="styles.css">
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    <link rel="stylesheet" href="/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap"
         rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
-    <!-- Profile Setup Modal -->
+    <!-- Profile Setup & Auth Modal -->
     <div id="profileModal" class="modal">
         <div class="modal-content">
-            <h1 class="welcome-title"><i data-lucide="music"></i> Welcome to Radddio</h1>
-            <p>Set up your profile to join the party</p>
+            <h1 class="welcome-title"><i data-lucide="zap"></i> Welcome to FREq</h1>
+            <p id="modalSubtext">Sync your FREQ with others in real-time</p>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabGuest" onclick="setAuthMode('guest')">Guest</button>
+                <button class="auth-tab" id="tabRegister" onclick="setAuthMode('register')">Register</button>
+                <button class="auth-tab" id="tabLogin" onclick="setAuthMode('login')">Login</button>
+            </div>
 
             <div class="profile-setup">
-                <div class="avatar-selection">
+                <div id="avatarSection" class="avatar-selection">
                     <label>Choose Your Avatar</label>
                     <div class="avatar-grid" id="avatarGrid">
                         <!-- Avatars will be generated here -->
                     </div>
                 </div>
 
-                <div class="username-input">
+                <div class="input-group">
                     <label for="usernameInput">Username</label>
                     <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20">
                 </div>
 
-                <div class="dj-toggle">
+                <div class="input-group auth-only" id="passwordGroup" style="display: none;">
+                    <label for="passwordInput">Password</label>
+                    <input type="password" id="passwordInput" placeholder="Enter your password">
+                </div>
+
+                <div class="dj-toggle" id="guestDjToggle">
                     <label>
                         <input type="checkbox" id="djCheckbox">
-                        <span>Join as DJ (can control music)</span>
+                        <span>Host this frequency?</span>
                     </label>
                 </div>
 
-                <button id="joinButton" class="primary-button">Join Room</button>
+                <button id="joinButton" class="primary-button">Start Syncing</button>
+            </div>
+            <div class="modal-footer">
+                <button class="ghost-button" onclick="closeAuthModal()">Just Browsing</button>
             </div>
         </div>
+    </div>
+
+    <!-- Discovery Hub (Home) -->
+    <div id="home" class="discovery-hub" style="display: none;">
+        <header class="home-header">
+            <div class="logo large">
+                <span class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="10" fill="url(#paint0_linear)" />
+                        <path d="M22 8L10 22H18L16 32L28 18H20L22 8Z" fill="white" />
+                        <defs>
+                            <linearGradient id="paint0_linear" x1="0" y1="0" x2="40" y2="40"
+                                gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#A855F7" />
+                                <stop offset="1" stop-color="#6366F1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <h1 class="brand-name">FREq</h1>
+            </div>
+            <p>Your personal music frequency.</p>
+        </header>
+
+        <section class="discovery-grid">
+            <div class="discovery-card leaderboard">
+                <h3><i data-lucide="music"></i> Top 5 TUNES</h3>
+                <div id="topSongsList" class="compact-list">
+                    <!-- Top songs populated here -->
+                </div>
+            </div>
+
+            <div class="discovery-card active-freqs">
+                <h3><i data-lucide="radio"></i> Live Now</h3>
+                <div id="activeFreqsList" class="compact-list">
+                    <!-- Active freqs populated here -->
+                </div>
+            </div>
+        </section>
+
+        <div class="home-actions">
+            <div class="hero-input-group">
+                <input type="text" id="newFreqSlugHome" placeholder="f/yourname..." maxlength="30">
+                <button class="primary-button x-large" id="startYourFreqBtn">
+                    <i data-lucide="zap"></i> Get on your FREQ
+                </button>
+            </div>
+        </div>
+
+        <footer class="discrete-footer">
+            <div class="social-links">
+                <a href="#" target="_blank"><i data-lucide="twitter"></i></a>
+                <a href="#" target="_blank"><i data-lucide="instagram"></i></a>
+                <a href="#" target="_blank"><i data-lucide="github"></i></a>
+            </div>
+            <span>v1.2.0 • FREq Identity</span>
+        </footer>
     </div>
 
     <!-- Main App -->
     <div id="app" class="app-container" style="display: none;">
         <!-- Header -->
         <header class="app-header">
-            <div class="logo">
-                <span class="logo-icon"><i data-lucide="radio"></i></span>
-                <h1>Radddio</h1>
+            <div class="logo clickable" onclick="window.location.href='/'">
+                <span class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="10" fill="url(#paint0_linear_header)" />
+                        <path d="M22 8L10 22H18L16 32L28 18H20L22 8Z" fill="white" />
+                        <defs>
+                            <linearGradient id="paint0_linear_header" x1="0" y1="0" x2="40" y2="40"
+                                gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#A855F7" />
+                                <stop offset="1" stop-color="#6366F1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <h1 class="brand-name">FREq</h1>
             </div>
+
             <div class="header-stats">
+                <div class="stat freq-slug-display" id="shareFreqBtn" title="Click to share FREQ">
+                    <span class="stat-icon"><i data-lucide="share-2"></i></span>
+                    <span id="currentFreqSlug">/global</span>
+                </div>
                 <div class="stat">
                     <span class="stat-icon"><i data-lucide="users"></i></span>
                     <span id="listenerCount">0</span>
@@ -68,15 +163,18 @@
                     <span id="songCount">0</span>
                 </div>
             </div>
-            <button id="profileButton" class="icon-button">
-                <span id="headerAvatar"><i data-lucide="user"></i></span>
-            </button>
+            <div class="header-controls">
+                <button id="logoutButton" class="ghost-button" style="display: none;">Logout</button>
+                <button id="profileButton" class="icon-button">
+                    <span id="headerAvatar"><i data-lucide="user"></i></span>
+                </button>
+            </div>
         </header>
 
         <!-- Mobile Navigation Tabs -->
         <div class="mobile-tabs" style="display: none;">
-            <div class="mobile-tab active" data-tab="player"><i data-lucide="disc"></i> Player</div>
-            <div class="mobile-tab" data-tab="users"><i data-lucide="users"></i> Users</div>
+            <div class="mobile-tab active" data-tab="player"><i data-lucide="disc"></i> FREQ</div>
+            <div class="mobile-tab" data-tab="users"><i data-lucide="users"></i> Folk</div>
             <div class="mobile-tab" data-tab="chat"><i data-lucide="message-square"></i> Chat</div>
         </div>
 
@@ -85,7 +183,7 @@
             <!-- Left Sidebar - Users -->
             <aside class="sidebar left-sidebar">
                 <div class="sidebar-header">
-                    <h2><i data-lucide="headset"></i> Listeners</h2>
+                    <h2><i data-lucide="users-2"></i> Synced Folk</h2>
                 </div>
                 <div id="userList" class="user-list">
                     <!-- Users will be populated here -->
@@ -106,77 +204,88 @@
                 </div>
             </div>
 
-            <!-- Circular Album Art Display -->
-            <div class="album-art-container">
-                <div id="noSongPlaceholder" class="no-song-placeholder">
-                    <div class="placeholder-content">
-                        <span class="placeholder-icon"><i data-lucide="music"></i></span>
-                        <h2>No song playing</h2>
-                        <p>Waiting for DJ to start the music...</p>
+            <!-- Main Stage -->
+            <main class="main-stage">
+                <!-- Circular Album Art Display -->
+                <div class="album-art-container">
+                    <div id="noSongPlaceholder" class="no-song-placeholder">
+                        <div class="placeholder-content">
+                            <span class="placeholder-icon"><i data-lucide="music"></i></span>
+                            <h2>Nothing floating...</h2>
+                            <p>Waiting for the FREQ to catch a wave</p>
+                        </div>
+                    </div>
+                    <div id="albumArtCircle" class="album-art-circle" style="display: none;">
+                        <img id="albumArtImage" src="" alt="Album Art">
+                        <div class="vinyl-effect"></div>
                     </div>
                 </div>
-                <div id="albumArtCircle" class="album-art-circle" style="display: none;">
-                    <img id="albumArtImage" src="" alt="Album Art">
-                    <div class="vinyl-effect"></div>
-                </div>
-            </div>
 
+                <!-- Now Playing Info -->
+                <div class="now-playing" id="nowPlaying">
+                    <div class="song-info">
+                        <h3 id="songTitle">Empty Frequency</h3>
+                        <p id="songArtist">Spinning silence...</p>
+                    </div>
 
-            <!-- Now Playing Info -->
-            <div class="now-playing" id="nowPlaying">
-                <div class="song-info">
-                    <h3 id="songTitle">No song playing</h3>
-                    <p id="songArtist">Waiting for music...</p>
+                    <div class="main-player-controls">
+                        <div class="reactions-bar">
+                            <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+                            <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+                            <button class="reaction-btn" onclick="sendReaction('🙌')">🙌</button>
+                            <button class="reaction-btn" onclick="sendReaction('✨')">✨</button>
+                        </div>
+                        <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
+                            <i data-lucide="maximize"></i>
+                        </button>
+                    </div>
+
+                    <div class="volume-control">
+                        <span class="volume-icon" id="volumeIcon"><i data-lucide="volume-2"></i></span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="50" class="volume-slider">
+                        <span class="volume-value" id="volumeValue">50%</span>
+                    </div>
                 </div>
 
-                <div class="main-player-controls">
-                    <button id="visualizerButton" class="control-button secondary" title="Toggle Visualizer">
-                        <i data-lucide="maximize"></i>
-                    </button>
+                <!-- Host Controls -->
+                <div id="djControls" class="dj-controls" style="display: none;">
+                    <div class="add-song-section">
+                        <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube link here..."
+                            class="url-input">
+                        <button id="addSongButton" class="primary-button">
+                            <i data-lucide="zap"></i> Start FREQ
+                        </button>
+                    </div>
+                    <div class="owner-controls" id="ownerTools" style="display: none;">
+                        <!-- Host tools here -->
+                    </div>
                 </div>
 
-                <div class="volume-control">
-                    <span class="volume-icon" id="volumeIcon"><i data-lucide="volume-2"></i></span>
-                    <input type="range" id="volumeSlider" min="0" max="100" value="50" class="volume-slider">
-                    <span class="volume-value" id="volumeValue">50%</span>
+                <!-- Playlist History -->
+                <div class="playlist-section">
+                    <div class="playlist-header">
+                        <h2><i data-lucide="history"></i> Past FREQs</h2>
+                        <button id="togglePlaylist" class="playlist-toggle-btn">
+                            <span id="playlistToggleText">View More</span>
+                            <i data-lucide="chevron-down" id="playlistToggleIcon"></i>
+                        </button>
+                    </div>
+                    <div id="playlistHistory" class="playlist-history">
+                        <p class="empty-state">Fresh frequency, no history.</p>
+                    </div>
                 </div>
-            </div>
-
-            <!-- DJ Controls -->
-            <div id="djControls" class="dj-controls" style="display: none;">
-                <div class="add-song-section">
-                    <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube URL here..." class="url-input">
-                    <button id="addSongButton" class="primary-button">
-                        <i data-lucide="plus"></i> Add to Queue
-                    </button>
-                </div>
-            </div>
-
-            <!-- Playlist History -->
-            <div class="playlist-section">
-                <div class="playlist-header">
-                    <h2><i data-lucide="list-music"></i> Recent Tracks</h2>
-                    <button id="togglePlaylist" class="playlist-toggle-btn">
-                        <span id="playlistToggleText">Show History</span>
-                        <i data-lucide="chevron-down" id="playlistToggleIcon"></i>
-                    </button>
-                </div>
-                <div id="playlistHistory" class="playlist-history">
-                    <p class="empty-state">No songs played yet</p>
-                </div>
-            </div>
             </main>
 
             <!-- Right Sidebar - Chat -->
             <aside class="sidebar right-sidebar">
                 <div class="sidebar-header">
-                    <h2><i data-lucide="message-square"></i> Chat</h2>
+                    <h2><i data-lucide="message-circle"></i> Chat FREQ</h2>
                 </div>
                 <div id="chatMessages" class="chat-messages">
                     <!-- Messages will be populated here -->
                 </div>
                 <div class="chat-input-container">
-                    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="500">
+                    <input type="text" id="chatInput" placeholder="Drop a thought..." maxlength="500">
                     <button id="sendMessageButton" class="send-button"><i data-lucide="send"></i></button>
                 </div>
             </aside>
@@ -186,8 +295,8 @@
     <!-- Scripts -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js"></script>
-    <script src="mobile.js"></script>
+    <script src="/app.js"></script>
+    <script src="/mobile.js"></script>
 </body>
 
 </html>
