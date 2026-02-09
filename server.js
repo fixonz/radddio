@@ -163,8 +163,21 @@ io.on('connection', (socket) => {
 
         const state = getFrequencyState(slug);
 
-        // Ownership Logic: Only the user whose username matches the slug is the Host
-        const isHost = (user.username.toLowerCase() === slug.toLowerCase());
+        // Ownership Logic:
+        // 1. Exact match (username === slug)
+        // 2. Persistent owner (state.owner === username)
+        // 3. First DJ (if unowned and user requested host status)
+        let isHost = (user.username.toLowerCase() === slug.toLowerCase());
+
+        if (state.owner && user.username === state.owner) {
+            isHost = true;
+        } else if (!state.owner && user.isHost) {
+            state.owner = user.username;
+            isHost = true;
+            persistFrequencyState(slug);
+            console.log(`👑 ${user.username} claimed FREQ: ${slug}`);
+        }
+
         const activeUser = { ...user, id: socket.id, isHost: isHost };
         state.users.set(socket.id, activeUser);
 
